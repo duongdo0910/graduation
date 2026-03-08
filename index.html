@@ -263,7 +263,7 @@
 </head>
 <body>
 
-  <audio id="bg-music" loop muted><source src="nhac.mp3" type="audio/mpeg"></audio>
+  <audio id="bg-music" autoplay loop muted playsinline><source src="nhac.mp3" type="audio/mpeg"></audio>
   <canvas id="cvs"></canvas>
   <button id="music-toggle">&#127925;</button>
 
@@ -475,19 +475,16 @@
   /* music */
   (function(){
     var au=document.getElementById('bg-music'),btn=document.getElementById('music-toggle'),on=false;
-    function setOn(){on=true;btn.innerHTML='&#128266;';window.removeEventListener('click',tryPlay);window.removeEventListener('scroll',onScroll);}
-    function tryPlay(){au.muted=false;au.play().then(setOn).catch(function(){});}
-    /* try autoplay on load */
-    au.muted=false;
-    au.play().then(setOn).catch(function(){
-      /* browser blocked: play on first touch/click/scroll */
-      var scrolled=false;
-      function onScroll(){if(!scrolled){scrolled=true;setTimeout(tryPlay,80);}}
-      window.addEventListener('click',tryPlay,{once:true});
-      window.addEventListener('scroll',onScroll,{passive:true,once:true});
-    });
-    function onScroll(){}
-    btn.addEventListener('click',function(e){e.stopPropagation();if(on){au.pause();on=false;btn.innerHTML='&#127925;';}else tryPlay();});
+    function setOn(){on=true;btn.innerHTML='&#128266;';}
+    function unmute(){au.muted=false;setOn();}
+    /* audio has autoplay+muted → unmute right away */
+    if(!au.paused){unmute();}
+    else{au.addEventListener('playing',function h(){au.removeEventListener('playing',h);unmute();},{once:true});}
+    /* fallback for strict browsers: unmute on first interaction */
+    function onInteract(){if(au.paused){au.muted=false;au.play().then(setOn).catch(function(){});}else unmute();window.removeEventListener('click',onInteract);window.removeEventListener('touchstart',onInteract);}
+    window.addEventListener('click',onInteract,{passive:true});
+    window.addEventListener('touchstart',onInteract,{passive:true});
+    btn.addEventListener('click',function(e){e.stopPropagation();if(on){au.pause();on=false;btn.innerHTML='&#127925;';}else{au.muted=false;au.play().then(setOn).catch(function(){});}});
   })();
   </script>
 </body>
